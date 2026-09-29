@@ -10,5 +10,5 @@ export * from "./selectivity";
 export * from "./qualification";
 export * from "./explain";
 export * from "./persistence";
-export * from "./supabasePersistence";
+export * from "./localPersistence";
 export * from "./scoring";

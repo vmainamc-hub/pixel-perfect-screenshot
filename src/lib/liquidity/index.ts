@@ -14,3 +14,4 @@ export * from "./engine";
 export * from "./scanner";
 export * from "./journal";
 export * from "./bridge";
+export * from "./hardened-engine";
