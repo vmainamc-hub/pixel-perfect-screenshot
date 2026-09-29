@@ -29,7 +29,6 @@ import {
   entropy,
   freq,
   hazardFunction,
-  isEven,
   isHigh,
   isLow,
   jsd,
@@ -156,9 +155,17 @@ export interface ContractAnalysis {
   jsdScore?: number;
 }
 
-export interface ParityAnalysis {
-  even: { share: number; recent: number; pressure: number; danger: number };
-  odd: { share: number; recent: number; pressure: number; danger: number };
+/**
+ * LOW/HIGH zone balance.
+ *
+ * NOTE: the upstream DigitPulse build also analysed EVEN/ODD ("parity") here and
+ * exposed it as a tradable family. This unified build is Over/Under only, so the
+ * EVEN/ODD contract analysis has been removed entirely — no parity share,
+ * pressure, danger, score, signal or veto exists anywhere in the pipeline.
+ * Digit-parity *psychology* rules (GREEN/RED digit placement) are unrelated and
+ * remain intact: they are structural Over/Under requirements, not a proposition.
+ */
+export interface ZoneBalanceAnalysis {
   low: { share: number; recent: number; pressure: number };
   high: { share: number; recent: number; pressure: number };
   zones: Record<string, number>;
@@ -185,8 +192,6 @@ export interface MarketAnalysis {
   high1000: number;
   low20: number;
   high20: number;
-  even20: number;
-  odd20: number;
   zoneMomentum: number;
   transition: number[][];
   mi: number;
@@ -208,7 +213,7 @@ export interface MarketAnalysis {
   digitMomentum: number[];
   lowHazard: HazardPoint[];
   highHazard: HazardPoint[];
-  parity: ParityAnalysis;
+  zoneBalance: ZoneBalanceAnalysis;
   contracts: ContractAnalysis[];
   top: ContractAnalysis;
   bayesian: Record<string, number>;
@@ -480,32 +485,19 @@ function analyzeContract(
   };
 }
 
-function analyzeParity(ds: number[], anomaly: number, fluctuation: number): ParityAnalysis {
+function analyzeZoneBalance(ds: number[]): ZoneBalanceAnalysis {
   const n = Math.max(1, ds.length);
-  const e = ds.filter(isEven).length / n;
-  const o = 1 - e;
   const l = ds.filter(isLow).length / n;
   const h = 1 - l;
   const rec = ds.slice(-50);
   const rn = Math.max(1, rec.length);
-  const er = rec.filter(isEven).length / rn;
   const lr = rec.filter(isLow).length / rn;
-  const danger = clamp(anomaly * 0.4 + fluctuation * 0.3 + Math.abs(er - (1 - er)) * 120);
   return {
-    even: { share: e * 100, recent: er * 100, pressure: clamp(50 + (er - e) * 250), danger },
-    odd: {
-      share: o * 100,
-      recent: (1 - er) * 100,
-      pressure: clamp(50 + (1 - er - o) * 250),
-      danger,
-    },
     low: { share: l * 100, recent: lr * 100, pressure: clamp(50 + (lr - l) * 250) },
     high: { share: h * 100, recent: (1 - lr) * 100, pressure: clamp(50 + (1 - lr - h) * 250) },
     zones: {
-      "LOW-EVEN": (ds.filter((d) => isLow(d) && isEven(d)).length / n) * 100,
-      "LOW-ODD": (ds.filter((d) => isLow(d) && !isEven(d)).length / n) * 100,
-      "HIGH-EVEN": (ds.filter((d) => isHigh(d) && isEven(d)).length / n) * 100,
-      "HIGH-ODD": (ds.filter((d) => isHigh(d) && !isEven(d)).length / n) * 100,
+      LOW: (ds.filter((d) => isLow(d)).length / n) * 100,
+      HIGH: (ds.filter((d) => isHigh(d)).length / n) * 100,
     },
   };
 }
@@ -558,7 +550,6 @@ export function analyzeMarket(
   const low20 = mean(w20.map((x) => (isLow(x) ? 1 : 0)));
   const low1000 = mean(w1000.map((x) => (isLow(x) ? 1 : 0)));
   const zoneMomentum = (low20 - low1000) * 100;
-  const parity20 = mean(w20.map((x) => (isEven(x) ? 1 : 0)));
 
   const trans = transition(w1000);
   const mi = mutualInformation(w1000);
@@ -621,7 +612,7 @@ export function analyzeMarket(
   };
 
   const contracts = CONTRACTS.map((c) => analyzeContract(ds, features, c, v3Opportunities[c.id]!));
-  const parity = analyzeParity(ds, anomaly, fluctuation);
+  const zoneBalance = analyzeZoneBalance(ds);
   const qualified = contracts.filter((x) => x.law).sort((a, b) => b.confirmation - a.confirmation);
   const top = qualified[0] ?? contracts[0]!;
   const lastTick = history[history.length - 1];
@@ -648,8 +639,6 @@ export function analyzeMarket(
     high1000: (1 - low1000) * 100,
     low20: low20 * 100,
     high20: (1 - low20) * 100,
-    even20: parity20 * 100,
-    odd20: (1 - parity20) * 100,
     zoneMomentum,
     transition: trans,
     mi,
@@ -671,7 +660,7 @@ export function analyzeMarket(
     digitMomentum: psychology.momentum,
     lowHazard: hazardFunction(ds, isLow),
     highHazard: hazardFunction(ds, isHigh),
-    parity,
+    zoneBalance,
     contracts,
     top,
     bayesian,
