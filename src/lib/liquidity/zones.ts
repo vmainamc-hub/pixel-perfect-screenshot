@@ -593,6 +593,7 @@ export class ZoneRegistry {
   private creationOrder: string[] = [];
 
   snapshot: ZoneRegistrySnapshot = {
+    historicalCount: 0,
     version: 0,
     activeZones: [],
     releaseWatch: [],

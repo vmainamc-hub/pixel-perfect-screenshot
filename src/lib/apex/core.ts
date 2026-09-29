@@ -4,6 +4,12 @@
 // throttled batched schedule so ~20 markets stay analysed without blocking
 // the UI thread.
 import { derivBus, type BusStatus } from "@/lib/deriv/tick-bus";
+// DigitPulse liquidity/psychology engine — runs on the SAME canonical tick history.
+import {
+  analyzeMarket as analyzeLiquidityMarket,
+  type MarketAnalysis as LiquidityMarketAnalysis,
+  type ContractAnalysis as LiquidityContractAnalysis,
+} from "@/lib/liquidity/engine";
 import { APEX_UNIVERSE, isApexSymbol } from "./universe";
 import {
   anomalyEngine,
@@ -517,7 +523,7 @@ class ApexCore {
         entropyDelta,
         settings,
       });
-      evaluation.liquidity = liquidity?.contracts.find((lc) => lc.id === id) ?? null;
+      evaluation.liquidity = liquidity?.contracts.find((lc: LiquidityContractAnalysis) => lc.id === id) ?? null;
       history.push(evaluation.compositeEdge);
       if (history.length > 60) history.splice(0, history.length - 60);
       this.edgeHistory.set(histKey, history);
