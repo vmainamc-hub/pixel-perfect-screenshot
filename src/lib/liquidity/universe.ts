@@ -52,19 +52,16 @@ export interface ContractDef {
   barrier: number;
 }
 
+// EXACTLY six propositions exist in this build — OVER 1/2/3 and UNDER 8/7/6.
+// Upstream DigitPulse also scanned OVER 4 and UNDER 5; they are removed so that
+// no seventh/eighth family can ever enter scoring, ranking or the UI.
 export const CONTRACTS: ContractDef[] = [
-  ...Array.from({ length: 4 }, (_, i) => ({
-    id: `OVER${i + 1}`,
-    label: `OVER ${i + 1}`,
-    kind: "OVER" as const,
-    barrier: i + 1,
-  })),
-  ...Array.from({ length: 4 }, (_, i) => ({
-    id: `UNDER${8 - i}`,
-    label: `UNDER ${8 - i}`,
-    kind: "UNDER" as const,
-    barrier: 8 - i,
-  })),
+  { id: "OVER1", label: "OVER 1", kind: "OVER", barrier: 1 },
+  { id: "OVER2", label: "OVER 2", kind: "OVER", barrier: 2 },
+  { id: "OVER3", label: "OVER 3", kind: "OVER", barrier: 3 },
+  { id: "UNDER8", label: "UNDER 8", kind: "UNDER", barrier: 8 },
+  { id: "UNDER7", label: "UNDER 7", kind: "UNDER", barrier: 7 },
+  { id: "UNDER6", label: "UNDER 6", kind: "UNDER", barrier: 6 },
 ];
 
 export const LIQUIDITY_STATES = [
