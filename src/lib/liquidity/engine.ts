@@ -559,10 +559,13 @@ export function analyzeMarket(
   const fluctuation = clamp(
     Math.abs(ent20 - ent1000) * 2 +
       Math.abs(zoneMomentum) * 0.75 +
-      Math.abs(parity20 - 0.5) * 100 +
+      // Was |even/odd share - 0.5|; this build is Over/Under only, so instability
+      // is measured from entropy velocity instead of any parity term.
+      Math.abs(entropyVelocity) * 60 +
       js * 120,
   );
-  const ac = autocorr(ds.map((x) => x % 2));
+  // LOW/HIGH autocorrelation (upstream used digit parity here).
+  const ac = autocorr(ds.map((x) => (isLow(x) ? 0 : 1)));
   const anomaly = clamp(js * 170 + ch * 0.45 + ph * 0.25 + Math.abs(ac) * 80);
   const persistence = clamp((runs(ds, isLow).max + runs(ds, isHigh).max) * 3);
   const transitionStability = clamp(100 - mi * 80);
